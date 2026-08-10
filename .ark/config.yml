@@ -1,0 +1,24 @@
+# ARK 專案設定
+#
+# 這份檔案標記「此專案已導入 ARK」，並告訴 agent 文件放在哪、上次完成導入或升級時是哪一版。
+# 由 init-project 技能產生與維護。
+#
+# 與 .ark/VERSION 的差別：
+#   .ark/VERSION   = 目前 .ark/ 這份檔案是哪一版（隨 ARK 更新而變，會被覆寫）
+#   ark_version    = 這個專案上次「完成升級」到哪一版（只在升級完成後才更新）
+# 兩者不同代表有升級尚未執行，此時應執行 init-project。
+#
+# 注意：ARK repo 自身也用 ARK 管理文件（dogfooding）。安裝到實際專案時不會複製本檔，
+#       改由 init-project 依使用者回答產生。
+
+ark_version: 1
+
+# 專案名稱
+project_name: "ARK"
+
+# 文件根目錄，相對於專案根目錄。慣例為 docs_{專案名稱}
+docs_root: "docs_ARK"
+
+# 本專案要參照的內部套件規範，對應 .ark/standards/ 底下的資料夾
+# 未設定時，write-code 技能會在第一次實作前詢問並寫回這裡
+standards: []
