@@ -22,7 +22,7 @@
 
 | 異動類型 | 要更新的 `library/` 檔案 |
 | --- | --- |
-| 新增或修改 service 內的 function | `index/functions/{service}_function_index.md` |
+| 新增或修改 service 內的 function | `index/functions/{API代號}.md` |
 | 新增或修改後端 API | `index/api_index.md` |
 | 新增或修改下游服務呼叫 | `index/downstream_api_index.md` |
 | 新增功能或主流程異動 | `system_overview.md` |

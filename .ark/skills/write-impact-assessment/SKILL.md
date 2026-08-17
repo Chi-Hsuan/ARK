@@ -28,14 +28,18 @@ description: 撰寫異動影響評估書——依需求書、系統全貌與各�
 
 | # | 讀什麼 | 得到什麼 |
 | --- | --- | --- |
-| 1 | `{docs_root}/library/system_overview.md` | 系統概要與主流程，先定位本次落在哪一塊 |
-| 2 | `{docs_root}/library/index/api_index.md` | 本服務的後端 API，找出本次會動到哪幾支 |
-| 3 | `{docs_root}/library/index/functions/` | 各 service 裡的 function，找出上述 API 底下會動到哪些 function |
-| 4 | `{docs_root}/library/index/downstream_api_index.md` | 本次會呼叫到的下游服務 |
+| 1 | `{docs_root}/library/index/INDEX_README.md` | 各索引的欄位定義與查詢流程，**先讀這份再查** |
+| 2 | `{docs_root}/library/system_overview.md` | 系統概要與主流程，先定位本次落在哪一塊 |
+| 3 | `{docs_root}/library/index/api_index.md` | 依關鍵字與使用場景，找出候選 API 與 Service 入口 |
+| 4 | `{docs_root}/library/index/functions/{API代號}.md` | 該 Service 呼叫的外部與共用 function |
+| 5 | **反查**：以 function 或共用類別名稱搜尋 `functions/` 全部檔案 | 還有哪些 Service 也用了它——**共用影響** |
+| 6 | `{docs_root}/library/index/downstream_api_index.md` | 涉及的下游系統與電文 |
 
-第 1 步只給大方向（有哪些功能、主流程長怎樣），細節在第 2、3 步。第 2 步先定位 API、第 3 步再往下鑽到 function，順序不要顛倒——直接從 function 找容易漏掉同一支 API 底下其他受影響的 function。
+第 5 步不要省略。改一支共用 function 時，直接影響只是其中一個 Service，**其他用到它的 Service 才是最容易漏掉的影響範圍**。
 
 由上述整理出「**接下來要讀哪些規格文件**」的清單，**列給使用者確認後再讀**。使用者通常知道還有哪些沒被索引涵蓋。
+
+索引是導航資料，不是規格也不是程式碼。`INDEX_README` 定義的可信順序是 **Source Code > Spec > INDEX**——索引與程式碼不一致時以程式碼為準，並提出索引更新建議。
 
 ### 索引查不到時
 
@@ -47,7 +51,13 @@ description: 撰寫異動影響評估書——依需求書、系統全貌與各�
 
 ## 步驟二：讀取規格
 
-依上一步的清單，讀 `{docs_root}/spec/` 底下對應的 `services/`、`frontend/`、`schema/` 文件。
+依上一步的清單，讀 `{docs_root}/spec/` 底下對應的文件。
+
+`api_index.md` 的 `Spec` 欄已記錄路徑，**直接取用，不要自行拼路徑**。欄位填 `-` 時，後端規格的位置是：
+
+```
+spec/services/{API代號前綴}_{功能名稱}/系統規格書_{API代號}_....md
+```
 
 規格文件不存在時記入知識庫缺口，並在異動範圍總覽的「對應規格書路徑」欄填「新建」。
 

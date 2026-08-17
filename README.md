@@ -2,7 +2,7 @@
 
 一組角色型 AI agent，協助團隊把需求、規格、程式與知識庫維持在同一條線上。
 
-支援 **GitHub Copilot** 與 **Codex**，兩邊操作方式一致。
+支援 **GitHub Copilot**、**Claude Code** 與 **Codex**，三邊操作方式一致。
 
 ---
 
@@ -50,13 +50,27 @@ git clone --depth 1 https://github.com/Chi-Hsuan/ARK.git $env:TEMP\ark
 powershell -ExecutionPolicy Bypass -File "$env:TEMP\ark\install.ps1"
 ```
 
+### 不用 Claude Code 的環境
+
+只用 Copilot 與 Codex 時，可以跳過 Claude Code 的轉接層（`.claude/` 與 `CLAUDE.md`）：
+
+```bash
+/tmp/ark/install.sh --no-claude
+```
+
+```powershell
+& "$env:TEMP\ark\install.ps1" -NoClaude
+```
+
+`.ark/` 中立層照裝——它是三個工具共用的實質內容。專案裡既有的 `.claude/` 不會被刪除，只是不更新。日後要補裝，重跑一次不帶這個選項的安裝指令即可。
+
 ### 安裝之後
 
 1. 用 VS Code 開啟該專案
 2. **Reload Window**（Copilot 才會載入 ARK 的 agent）
 3. 叫用 **Ark** 總管 → 選擇「導入 / 升級 ARK」
 4. 依問答填入專案名稱與文件根目錄，總管會建立文件骨架
-5. 把 `.ark/`、`.github/`、`AGENTS.md` 與文件資料夾**提交進版控**
+5. 把 `.ark/`、`.github/`、`.claude/`、`AGENTS.md`、`CLAUDE.md` 與文件資料夾**提交進版控**
 
 第 5 步做完，團隊其他人不需要再執行任何安裝。
 
@@ -66,12 +80,13 @@ powershell -ExecutionPolicy Bypass -File "$env:TEMP\ark\install.ps1"
 
 | 工具 | 怎麼開始 |
 | --- | --- |
-| Copilot | 在 chat 的 agent 清單選擇 **Ark**（或直接選個別角色） |
+| Copilot | 在 chat 的 agent 清單選擇 **Ark Orchestrator(總管)**（或直接選個別角色） |
+| Claude Code | 直接對話即可，它會讀 `CLAUDE.md` 進入總管 |
 | Codex | 直接對話即可，它會讀 `AGENTS.md` 進入總管 |
 
-兩邊都是**先叫總管、再從選單挑工作**。角色可以在對話中途切換，不必回到總管。
+三邊都是**先叫總管、再從選單挑工作**。角色可以在對話中途切換，不必回到總管。
 
-Copilot 使用者也可以直接點選個別角色（Ark Navigator(PO)、Ark Architect(SA)…），但教學與新人上手建議統一走總管，這樣兩個工具的操作一致。
+Copilot 使用者也可以直接點選個別角色；Claude Code 則另外提供 `ark-navigator`、`ark-architect` 等 subagent，適合需要獨立長時間作業的工作（例如跑完整份 code review）。日常使用建議統一走總管，這樣三個工具的操作一致。
 
 ---
 
@@ -83,7 +98,11 @@ Copilot 使用者也可以直接點選個別角色（Ark Navigator(PO)、Ark Arc
 ├── .github/
 │   ├── agents/                Copilot 角色
 │   └── skills/                Copilot 技能
+├── .claude/
+│   ├── agents/                Claude Code subagent
+│   └── skills/                Claude Code 技能
 ├── AGENTS.md                  Codex 入口
+├── CLAUDE.md                  Claude Code 入口
 └── docs_{專案名稱}/
     ├── requirements/          【流動】一需求一資料夾，上線後凍結
     ├── spec/                  【現況】前端 / 後端 / 資料庫規格
@@ -117,24 +136,24 @@ Copilot 使用者也可以直接點選個別角色（Ark Navigator(PO)、Ark Arc
 
 ### 中立層與轉接層
 
-`.ark/` 是唯一的實質內容來源，Copilot 與 Codex 各自只有一層薄轉接：
+`.ark/` 是唯一的實質內容來源，三個工具各自只有一層薄轉接：
 
 | 檔案 | 角色 |
 | --- | --- |
 | `.ark/roles/`、`.ark/skills/`、`.ark/workflow.md` | **實質內容，改這裡** |
-| `.github/agents/*.agent.md` | Copilot 轉接層，只負責指路 |
-| `.github/skills/*/SKILL.md` | Copilot 技能轉接層，只負責指路 |
+| `.github/agents/`、`.github/skills/` | Copilot 轉接層，只負責指路 |
+| `.claude/agents/`、`.claude/skills/`、`CLAUDE.md` | Claude Code 轉接層 |
 | `AGENTS.md` | Codex 轉接層 |
 
-**修改角色行為或流程規則時只改 `.ark/`。** 改轉接層會讓兩個工具的行為開始分歧。
+**修改角色行為或流程規則時只改 `.ark/`。** 改轉接層會讓三個工具的行為開始分歧。
 
 ### 新增技能
 
-在 `.ark/skills/` 新增後，兩側轉接層都要補：
+在 `.ark/skills/` 新增後，各工具的轉接層都要補：
 
 ```bash
 .ark/tools/sync-adapters.sh          # 檢查缺什麼
-.ark/tools/sync-adapters.sh --write  # 補上 Copilot 轉接層
+.ark/tools/sync-adapters.sh --write  # 補上 Copilot 與 Claude Code 轉接層
 ```
 
 `AGENTS.md` 的技能表有角色分組，工具只提示缺漏，需自行加到正確位置。
@@ -145,7 +164,9 @@ Copilot 使用者也可以直接點選個別角色（Ark Navigator(PO)、Ark Arc
 ARK/
 ├── install.sh / install.ps1   安裝指令
 ├── AGENTS.md                  Codex 轉接層（也是 ARK 自己的）
+├── CLAUDE.md                  Claude Code 轉接層
 ├── .github/                   Copilot 轉接層
+├── .claude/                   Claude Code 轉接層
 ├── .ark/
 │   ├── VERSION  CHANGELOG.md  config.yml
 │   ├── workflow.md            共用流程與規則

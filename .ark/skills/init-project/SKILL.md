@@ -16,12 +16,32 @@ description: 把 ARK 導入專案、檢查安裝完整性、或升級到新版 A
 
 | 狀況 | 情境 | 前往 |
 | --- | --- | --- |
-| `config.yml` 不存在 | 導入 | 步驟二 |
+| `.ark/` 存在、`config.yml` 不存在 | 導入（**安裝後的正常狀態**） | 步驟二 |
 | 兩者版本相同 | 檢查 | 步驟四 |
 | `VERSION` > `config.yml` 的版本 | 升級 | 步驟五 |
 | `VERSION` 不存在 | 安裝不完整 | 告知使用者 `.ark/` 檔案缺漏，需重新執行安裝指令，停止 |
 
-`.ark/` 本身不存在時，代表這個 workspace 沒有 ARK 檔案，本技能無從執行——告知使用者需先執行 ARK 的安裝指令把檔案複製進來。
+`.ark/` 本身不存在時，代表這個 workspace 沒有 ARK 檔案，本技能無從執行。
+
+`config.yml` 不存在**不等於**檔案都不在——它本來就是導入時才產生的。看到 `config.yml` 缺少時，先實際確認 `.ark/VERSION`、`.ark/skills/`、`.ark/roles/` 在不在，再下結論。
+
+### 找不到檔案時要回報診斷資訊
+
+**不要只說「不存在」。** 使用者無從判斷是沒安裝、還是你根本不在那個專案裡。一併回報：
+
+1. 你認定的 workspace 根目錄**絕對路徑**
+2. 該目錄的**第一層項目**（含 `.` 開頭的資料夾）
+3. `.ark/`、`.ark/VERSION`、`.github/agents/` 各自存不存在
+
+依組合判讀並給出對應建議：
+
+| `.github/agents/` | `.ark/` | 判讀與建議 |
+| --- | --- | --- |
+| 存在 | 存在 | 檔案齊全，繼續往下 |
+| 存在 | **不存在** | 安裝不完整，只有轉接層被複製。請重跑安裝指令並確認沒有錯誤訊息 |
+| **不存在** | **不存在** | **這個 workspace 從未安裝過 ARK**。你現在能被叫用，代表 agent 是從**別的資料夾**載入的——最常見是 VS Code 同時開了 ARK repo，或使用了多根 workspace。請確認只開啟目標專案，並在該專案執行安裝指令 |
+
+最後一列是實務上最常發生、也最難自己看出來的狀況——agent 明明在、檔案卻不在，使用者會以為是 ARK 壞了。
 
 ---
 
@@ -71,6 +91,8 @@ docs_root: "docs_分行數位服務"
 
 使用者若把文件根目錄改成與預設不同的名稱（例如 `docs`），`project_name` 仍填使用者輸入的專案名稱，**不要從資料夾名反推**——兩個欄位各自獨立。
 
+`code_root`（程式碼根目錄）這時候**不要寫**。它未設定時預設為 `{docs_root}/code/`，只有程式碼放在別處時才需要，由後續技能問過使用者後寫回。
+
 `config.yml` 已存在但 `docs_root` 指向不存在的路徑時（例如從別的專案複製過來的殘留設定），視為需要重新設定，詢問使用者後覆寫該欄位。
 
 ### 2.4 建立文件骨架
@@ -86,13 +108,27 @@ docs_root: "docs_分行數位服務"
 ├── spec/
 │   ├── README.md
 │   ├── frontend/  services/  schema/
-└── library/
-    ├── system_overview.md
-    ├── business/
-    └── index/
+├── library/
+│   ├── system_overview.md
+│   ├── business/
+│   └── index/
+│       ├── INDEX_README.md
+│       ├── api_index.md
+│       ├── downstream_api_index.md
+│       └── functions/
+│           └── {API代號}.md
+└── code/
+    ├── README.md
+    └── .gitignore
 ```
 
-複製後置換檔案中的 `{docs_root}` 佔位符為實際值。
+`code/` 是**放程式碼**的地方，不是文件區塊。範本只有兩個檔案，內容由使用者或步驟 2.7 的 clone 產生。`.gitignore` 是隱藏檔，複製時容易漏掉——它負責把整個 `code/` 排除在文件 repo 之外，**沒複製到就會把整份程式碼提交進版控**，務必確認它在。
+
+`library/` 底下的檔案是**帶有表頭與欄位定義的空白範本**，不是空檔——複製後保留原樣，內容由 Librarian 在需求上線後逐步填入。特別是 `INDEX_README.md`，它定義了各索引的欄位規則與查詢流程，是其他技能讀取索引的依據，不要刪。
+
+`functions/{API代號}.md` 也要一起複製，且**檔名維持 `{API代號}.md` 原樣**——它是「一支 Service 一份」的空白範本，Librarian 新增 Service 時複製一份改名成實際的 API 代號（例如 `TWDW001.md`）再填內容。它不是漏置換的佔位符，不要因為看起來像就置換掉、也不要刪除，否則第一個要建 function index 的人沒有格式可依循。
+
+複製後置換**檔案內容**中的 `{docs_root}` 佔位符為實際值。**只置換 `{docs_root}` 這一個**，`{API代號}`、`{系統名稱}` 等其他佔位符是範本的一部分，內容與檔名都保留原樣。
 
 **合併規則**：目標位置已有同名檔案時**一律保留既有檔案**，不覆寫，並把該檔列入最後的回報清單，讓使用者自行決定要不要比對範本。空資料夾用 `.gitkeep` 佔位，讓它們能進版控。
 
@@ -104,17 +140,65 @@ docs_root: "docs_分行數位服務"
 | --- | --- | --- |
 | `.github/agents/*.agent.md` | Copilot 角色 | Copilot 叫不到 ARK 的角色 |
 | `.github/skills/` | Copilot 技能 | Copilot 無法自動載入技能 |
+| `.claude/agents/ark-*.md` | Claude Code 角色 | Claude Code 沒有對應的 subagent |
+| `.claude/skills/` | Claude Code 技能 | Claude Code 無法自動載入技能 |
 | `AGENTS.md` | Codex 入口 | Codex 不知道這是 ARK 專案 |
+| `CLAUDE.md` | Claude Code 入口 | Claude Code 不知道這是 ARK 專案 |
+
+只用其中一種工具的團隊，其他工具的轉接層缺少不影響使用——回報時說明「缺少的是哪個工具的」，由使用者判斷要不要補。
 
 缺少哪一個就明確說出哪個工具會不能用，並請使用者重新執行安裝指令。
 
-### 2.6 回報
+### 2.6 確認版控
+
+ARK 的多個技能（例如 `change-requirement-status` 的階段 commit、`revise-spec` 改規格前的還原點）預設專案在 git 版控下。導入完成後確認這件事成立。
+
+在專案根目錄執行 `git rev-parse --show-toplevel`，依結果處理：
+
+| 結果 | 判讀 | 反應 |
+| --- | --- | --- |
+| 輸出的路徑等於專案根目錄 | 已在版控下 | 不做任何事，繼續 2.7 |
+| 輸出的路徑是**上層某個目錄** | 專案位於別的 repo 底下 | 告知使用者這件事，問他要沿用外層 repo 還是在此建立獨立 repo。**不要自行 `git init`**——那會產生巢狀 repo |
+| 指令失敗（不是 git 倉庫） | 尚未納入版控 | 說明 ARK 需要 git，詢問使用者後執行 `git init` |
+| 指令不存在 | 環境沒裝 git | 回報並跳過，在 2.7 提醒使用者自行處理 |
+
+執行 `git init` 前先取得使用者同意，不要預設執行。**只做 `git init`**——不要順手 `git add`、`git commit` 或動專案根目錄的 `.gitignore`，第一次提交的範圍由使用者決定。
+
+`{docs_root}/code/` 的排除規則由該資料夾自己的 `.gitignore`（隨範本複製）負責，不需要也不要寫進根目錄的 `.gitignore`。
+
+### 2.7 取得程式碼
+
+詢問使用者**現在要不要把程式碼 clone 進 `{docs_root}/code/`**。這是選用的，回答不要就直接跳到 2.8——`code/` 資料夾與說明文件已經在，使用者隨時可以自己放。
+
+回答不要時，若使用者順帶說明程式碼已經在別的位置（例如既有的工作目錄），把該路徑寫進 `.ark/config.yml` 的 `code_root`，後續技能就不必再問一次。使用者沒提就不要追問。
+
+要的話，逐一問 repo URL：
+
+1. 一次問一個 URL
+2. 每問完一個，問「還有嗎」，直到使用者說沒有——**可能不只一個倉庫**，不要問完第一個就收尾
+3. 全部收齊後，把清單列出來請使用者確認，再開始 clone
+
+Clone 時：
+
+- 一律在 `{docs_root}/code/` 底下執行，不要 clone 到專案根目錄或 workspace 之外
+- 預設用 repo 名稱當資料夾名；已存在同名資料夾時**不要覆寫**，詢問使用者要改名還是跳過
+- 逐一執行，一個失敗不影響其他個。失敗時記下錯誤訊息（常見是沒有權限、URL 打錯、企業內網需要 VPN），繼續處理下一個
+- **不要**對 clone 下來的倉庫做任何操作——不切分支、不改設定、不提交
+
+全部處理完後，把成功的倉庫填進 `{docs_root}/code/README.md` 的「已取得的程式碼」表格（資料夾名、Repo URL、說明）。這份表格會進文件 repo 的版控，是團隊其他人知道要 clone 什麼的唯一依據。
+
+失敗的倉庫不要填進表格，改在 2.8 回報時列出，讓使用者自行處理後再補登。
+
+### 2.8 回報
 
 1. 列出實際建立的檔案與資料夾
 2. 列出因為已存在而**跳過**的檔案
-3. 提醒使用者：
+3. 回報 2.6 的版控狀態（已在版控下 / 已建立 repo / 使用者婉拒或環境沒裝 git）
+4. 回報 2.7 的 clone 結果：成功的倉庫、失敗的倉庫與各自的原因
+5. 提醒使用者：
    - 需 reload window，Copilot 才會載入新的 agent
-   - `.ark/`、`.github/`、`AGENTS.md` 與文件骨架**都要提交進版控**，團隊其他人 clone 後才能直接使用
+   - `.ark/`、`.github/`、`.claude/`、`AGENTS.md`、`CLAUDE.md` 與文件骨架**都要提交進版控**，團隊其他人 clone 後才能直接使用
+   - `{docs_root}/code/` 底下的程式碼**不會**進版控（只有 `README.md` 與 `.gitignore` 會），團隊其他人要自己依 `code/README.md` 的清單取得
    - 可以接著用 Navigator 開立第一筆需求
 
 ---
@@ -141,10 +225,13 @@ docs_root: "docs_分行數位服務"
 | 2 | `{docs_root}` 底下 `requirements/`、`spec/`、`library/` 三個區塊齊全 |
 | 3 | `requirements/` 有說明文件與需求總管 |
 | 4 | `spec/` 有 README |
-| 5 | 轉接層齊全（見 2.5） |
-| 6 | `.ark/templates/` 底下三份文件範本齊全 |
-| 7 | 技能轉接層齊全——執行 `.ark/tools/sync-adapters.sh`，缺漏時以 `--write` 補上 Copilot 那側，`AGENTS.md` 需手動補進正確的角色分組 |
-| 8 | 需求總管的每一列都有對應的需求資料夾，反之亦然 |
+| 5 | `library/index/` 有 `INDEX_README.md`、`api_index.md`、`downstream_api_index.md`，以及 `functions/` 與其中的 `{API代號}.md` 範本 |
+| 6 | 轉接層齊全（見 2.5） |
+| 7 | `.ark/templates/` 底下三份文件範本齊全 |
+| 8 | 技能轉接層齊全——執行 `.ark/tools/sync-adapters.sh`，缺漏時以 `--write` 補上 Copilot 那側，`AGENTS.md` 需手動補進正確的角色分組 |
+| 9 | 需求總管的每一列都有對應的需求資料夾，反之亦然 |
+| 10 | 專案在 git 版控下（判定與處理方式見 2.6） |
+| 11 | `{docs_root}/code/` 存在，且底下有 `README.md` 與 `.gitignore`——`.gitignore` 缺少代表程式碼正暴露在文件 repo 的版控範圍內，優先補上 |
 
 有問題就說明缺什麼、會影響哪個功能、以及怎麼補。全部通過就回報「檢查通過」與目前的 ARK 版本。
 

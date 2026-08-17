@@ -10,7 +10,16 @@
 2. `.ark/workflow.md` — 共用流程與規則
 3. `.ark/roles/orchestrator.md` — 總管的角色定義與可執行項目
 
-若 `.ark/config.yml` 不存在，代表此專案尚未導入 ARK。告知使用者並詢問是否導入，**不要自行猜測專案結構或建立任何文件**。
+`.ark/config.yml` 不存在時，**先確認 `.ark/` 資料夾本身在不在**，兩者的意義完全不同：
+
+| 狀況 | 意義 | 反應 |
+| --- | --- | --- |
+| `.ark/` 存在、`config.yml` 不存在 | **已安裝、尚未導入**（安裝後的正常狀態） | 詢問使用者是否導入，同意則執行 `.ark/skills/init-project/SKILL.md` |
+| `.ark/` 不存在 | 這個 workspace 沒有 ARK 檔案 | 請使用者先執行安裝指令。一併列出你認定的 workspace 根目錄路徑與第一層項目（含 `.` 開頭者），讓使用者能分辨是「沒安裝」還是「agent 從別的資料夾載入」 |
+
+**不要因為 `config.yml` 不存在就認定檔案都不在。** 兩者要分別確認過再下結論，也不要自行猜測專案結構或建立任何文件。
+
+**一律使用繁體中文（台灣用語）與使用者互動。** 技術名詞、指令、檔名維持原文。
 
 上述檔案的內容優先於你的既有假設。所有路徑一律以 `.ark/config.yml` 為準，不要寫死。
 
@@ -58,17 +67,19 @@
 
 ## 給維護者
 
-`.ark/` 是 ARK 的中立層，Copilot 與 Codex 共用同一份內容：
+`.ark/` 是 ARK 的中立層，Copilot、Claude Code 與 Codex 共用同一份內容：
 
-- 本檔案（`AGENTS.md`）是 Codex 的轉接層
-- `.github/agents/*.agent.md` 是 Copilot 的轉接層
-- `.github/skills/` 是 Copilot 的技能轉接層
+| 檔案 | 工具 |
+| --- | --- |
+| 本檔案（`AGENTS.md`） | Codex 入口 |
+| `.github/agents/`、`.github/skills/` | Copilot |
+| `.claude/agents/`、`.claude/skills/`、`CLAUDE.md` | Claude Code |
 
-轉接層只負責指路，**所有實質內容都寫在 `.ark/`**。修改角色行為或流程規則時只改 `.ark/`，不要改轉接層，否則兩個工具的行為會開始分歧。
+轉接層只負責指路，**所有實質內容都寫在 `.ark/`**。修改角色行為或流程規則時只改 `.ark/`，不要改轉接層，否則三個工具的行為會開始分歧。
 
 ## 新增技能時
 
-在 `.ark/skills/` 新增技能後，**兩側轉接層都要補**，否則某一個工具會載不到：
+在 `.ark/skills/` 新增技能後，**各工具的轉接層都要補**，否則某個工具會載不到：
 
 ```bash
 .ark/tools/sync-adapters.sh          # 檢查缺什麼

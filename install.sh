@@ -13,18 +13,22 @@
 #     /tmp/ark/install.sh /path/to/project
 #
 #   選項
-#     -y    不詢問直接執行（非互動環境必須加）
+#     -y           不詢問直接執行（非互動環境必須加）
+#     --no-claude  不安裝 Claude Code 轉接層（.claude/ 與 CLAUDE.md）
+#                  給只用 Copilot 與 Codex 的環境。既有檔案不會被刪除，只是不更新。
 
 set -euo pipefail
 
 ARK_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ASSUME_YES=0
+NO_CLAUDE=0
 TARGET=""
 for arg in "$@"; do
   case "$arg" in
     -y|--yes) ASSUME_YES=1 ;;
-    -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --no-claude) NO_CLAUDE=1 ;;
+    -h|--help) sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) TARGET="$arg" ;;
   esac
 done
@@ -57,8 +61,19 @@ printf '目標專案：%s\n\n將%s下列項目：\n' "$TARGET" "$MODE"
 info ".ark/                    流程、角色、技能、範本、套件規範、工具"
 info ".github/agents/Ark*      Copilot 角色"
 info ".github/skills/          Copilot 技能"
+if [ "$NO_CLAUDE" -eq 0 ]; then
+  info ".claude/agents/ark-*     Claude Code 角色"
+  info ".claude/skills/          Claude Code 技能"
+fi
 info "AGENTS.md                Codex 入口"
-printf '\n不會動到：專案既有的文件、其他 agent 檔、.ark/config.yml\n\n'
+if [ "$NO_CLAUDE" -eq 0 ]; then
+  info "CLAUDE.md                Claude Code 入口"
+fi
+printf '\n不會動到：專案既有的文件、其他 agent 檔、.ark/config.yml\n'
+if [ "$NO_CLAUDE" -eq 1 ]; then
+  printf '已指定 --no-claude：跳過 .claude/ 與 CLAUDE.md（既有的不會被刪除，但也不會更新）\n'
+fi
+printf '\n'
 
 if [ "$ASSUME_YES" -eq 0 ]; then
   [ -t 0 ] || err "非互動環境請加上 -y"
@@ -100,29 +115,62 @@ for skill in "$ARK_SRC/.github/skills"/*/; do
 done
 info "已寫入 .github/skills/"
 
-# Codex 轉接層——專案已有自己的 AGENTS.md 時不覆寫
-if [ -f "$TARGET/AGENTS.md" ] && ! head -5 "$TARGET/AGENTS.md" | grep -q '^# ARK$'; then
-  cp "$ARK_SRC/AGENTS.md" "$TARGET/AGENTS.ark.md"
-  info "偵測到既有 AGENTS.md，ARK 的版本另存為 AGENTS.ark.md"
-  NEEDS_MERGE=1
+# Claude Code 轉接層——只動 ARK 自己的檔案
+if [ "$NO_CLAUDE" -eq 1 ]; then
+  info "略過 .claude/（--no-claude）"
 else
-  cp "$ARK_SRC/AGENTS.md" "$TARGET/AGENTS.md"
-  info "已寫入 AGENTS.md"
-  NEEDS_MERGE=0
+  mkdir -p "$TARGET/.claude/agents"
+  find "$ARK_SRC/.claude/agents" -maxdepth 1 -name 'ark-*.md' -exec cp {} "$TARGET/.claude/agents/" \;
+  info "已寫入 .claude/agents/"
+
+  mkdir -p "$TARGET/.claude/skills"
+  for skill in "$ARK_SRC/.claude/skills"/*/; do
+    [ -d "$skill" ] || continue
+    name="$(basename "$skill")"
+    rm -rf "${TARGET:?}/.claude/skills/$name"
+    cp -R "${skill%/}" "$TARGET/.claude/skills/"
+  done
+  info "已寫入 .claude/skills/"
 fi
+
+# 入口檔——專案已有自己的版本時不覆寫，另存待合併
+ENTRY_FILES="AGENTS.md"
+if [ "$NO_CLAUDE" -eq 0 ]; then
+  ENTRY_FILES="AGENTS.md CLAUDE.md"
+fi
+
+NEEDS_MERGE=""
+for file in $ENTRY_FILES; do
+  if [ -f "$TARGET/$file" ] && ! head -5 "$TARGET/$file" | grep -q '^# ARK$'; then
+    cp "$ARK_SRC/$file" "$TARGET/${file%.md}.ark.md"
+    info "偵測到既有 ${file}，ARK 的版本另存為 ${file%.md}.ark.md"
+    NEEDS_MERGE="$NEEDS_MERGE $file"
+  else
+    cp "$ARK_SRC/$file" "$TARGET/$file"
+    info "已寫入 $file"
+  fi
+done
 
 # --- 後續 -------------------------------------------------------------------
 
+if [ "$NO_CLAUDE" -eq 1 ]; then
+  RELOAD_NOTE="Copilot 才會載入 ARK 的 agent"
+  COMMIT_LIST=".ark/、.github/、AGENTS.md"
+else
+  RELOAD_NOTE="Copilot 才會載入 ARK 的 agent；Claude Code 需重開對話"
+  COMMIT_LIST=".ark/、.github/、.claude/、AGENTS.md、CLAUDE.md"
+fi
+
 printf '\n\033[32m%s完成\033[0m\n\n接下來：\n' "$MODE"
 echo "  1. 用 VS Code 開啟 $TARGET"
-echo "  2. Reload Window（Copilot 才會載入 ARK 的 agent）"
+echo "  2. Reload Window（${RELOAD_NOTE}）"
 echo "  3. 叫用 Ark 總管，選擇「導入 / 升級 ARK」完成設定"
-echo "  4. 確認無誤後把 .ark/、.github/、AGENTS.md 與文件資料夾提交進版控"
+echo "  4. 確認無誤後把 $COMMIT_LIST 與文件資料夾提交進版控"
 
-if [ "${NEEDS_MERGE:-0}" -eq 1 ]; then
-  printf '\n\033[33m注意\033[0m 這個專案原本就有 AGENTS.md。\n'
-  echo "     Codex 只讀 AGENTS.md，請把 AGENTS.ark.md 的內容併入後刪除該檔，"
-  echo "     否則 Codex 那側不會知道這是 ARK 專案。"
+if [ -n "${NEEDS_MERGE// /}" ]; then
+  printf '\n\033[33m注意\033[0m 這個專案原本就有：%s\n' "$NEEDS_MERGE"
+  echo "     這些工具各自只讀自己的入口檔，請把 *.ark.md 的內容併入後刪除該檔，"
+  echo "     否則對應的工具不會知道這是 ARK 專案。"
 fi
 
 printf '\n'

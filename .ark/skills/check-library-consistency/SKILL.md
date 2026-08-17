@@ -10,7 +10,7 @@ description: 檢查 library 知識庫與實際程式碼是否一致，找出索�
 ## 前置檢查
 
 1. 讀 `.ark/config.yml`，取得 `docs_root`。不存在則告知使用者此專案尚未導入 ARK 並停止
-2. 讀 `{docs_root}/library/index/README.md`，取得各索引的定位與欄位定義
+2. 讀 `{docs_root}/library/index/INDEX_README.md`，取得各索引的定位、欄位定義與維護規則
 
 以下提到的 `library/`、`spec/` 皆為 `{docs_root}` 底下的相對路徑。
 
@@ -30,8 +30,8 @@ description: 檢查 library 知識庫與實際程式碼是否一致，找出索�
 | --- | --- |
 | 1 | 索引各列的欄位是否齊全，有沒有整列留白 |
 | 2 | `library/` 內的相對連結，指向的檔案是否存在 |
-| 3 | `api_index.md` 列的 API，`spec/services/` 是否有對應規格 |
-| 4 | `functions/` 索引列的 function，對應規格中是否找得到 |
+| 3 | `api_index.md` 的 `Spec` 欄路徑是否指向存在的檔案 |
+| 4 | `api_index.md` 的每支 Service（`{API代號}`），`functions/` 底下是否有對應的 `{API代號}.md`，`spec/services/{API代號前綴}_{功能名稱}/` 底下是否有對應序號的系統規格書 |
 | 5 | 需求總管中標記「已同步」的需求，其異動影響評估書列的項目是否確實出現在索引 |
 
 先把這一階段的結果給使用者。**如果這裡就找出一批問題，建議先處理完再進第二階段**——文件層都對不齊時，掃程式只會得到更多雜訊。
@@ -46,6 +46,8 @@ description: 檢查 library 知識庫與實際程式碼是否一致，找出索�
 | --- | --- |
 | 比對哪個分支或版本 | **預設應為已上線的版本**（主要分支或 release tag），不是開發分支 |
 | 程式碼根目錄在哪 | 專案結構未必是單一 repo |
+
+程式碼根目錄依 `.ark/workflow.md` 的「程式碼的位置」判定：`.ark/config.yml` 的 `code_root`，未設定時預設 `{docs_root}/code/`。該路徑找不到程式碼時問使用者，得到的答案若不是預設路徑就寫回 `code_root`。**沒問出位置就不要開始掃**——掃錯目標會把整份知識庫報成不一致。
 
 這一步不能省。拿開發分支比對，會把「還沒上線的新功能」全部報成「知識庫缺漏」——但尚未上線的東西本來就不該出現在 `library/`。
 
@@ -74,8 +76,8 @@ description: 檢查 library 知識庫與實際程式碼是否一致，找出索�
 | --- | --- | --- |
 | 1 | 索引 → 程式 | `api_index.md` 列的 API，程式中有對應的實作入口 |
 | 2 | 程式 → 索引 | 程式中對外的 API 入口，都出現在 `api_index.md` |
-| 3 | 索引 → 程式 | `functions/{service}_function_index.md` 列的 function 確實存在，且屬於該 service |
-| 4 | 程式 → 索引 | service 層的公開 function，都出現在對應索引 |
+| 3 | 索引 → 程式 | `functions/{API代號}.md` 列的 function 確實存在，且確實被該 Service 呼叫 |
+| 4 | 程式 → 索引 | Service 呼叫的**外部／共用** function，都出現在對應的 `functions/{API代號}.md`（依 INDEX_README 的收錄範圍，不含該類別自身的方法） |
 | 5 | 索引 → 程式 | `downstream_api_index.md` 列的下游服務，程式中確實有呼叫 |
 | 6 | 程式 → 索引 | 程式中呼叫的外部服務，都出現在 `downstream_api_index.md` |
 | 7 | 文件 → 程式 | `system_overview.md` 提到的功能與主流程，程式中找得到入口 |

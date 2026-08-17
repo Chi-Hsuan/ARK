@@ -62,7 +62,7 @@ description: 盤點待同步的需求，並把已上線需求的異動回寫到 
 | --- | --- |
 | 新增功能或主流程異動 | `library/system_overview.md` |
 | 新增或修改後端 API | `library/index/api_index.md` |
-| 新增或修改 service 內的 function | `library/index/functions/{service}_function_index.md` |
+| 新增或修改 service 內的 function | `library/index/functions/{API代號}.md` |
 | 新增或修改下游服務呼叫 | `library/index/downstream_api_index.md` |
 | 業務規則變更 | `library/business/` |
 

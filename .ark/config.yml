@@ -19,6 +19,15 @@ project_name: "ARK"
 # 文件根目錄，相對於專案根目錄。慣例為 docs_{專案名稱}
 docs_root: "docs_ARK"
 
-# 本專案要參照的內部套件規範，對應 .ark/standards/ 底下的資料夾
-# 未設定時，write-code 技能會在第一次實作前詢問並寫回這裡
-standards: []
+# 程式碼根目錄。未設定時預設為 {docs_root}/code，只有程式碼放在別處時才需要填。
+# 由需要讀寫程式的技能在找不到程式碼、問過使用者之後寫回。可用相對或絕對路徑。
+#   code_root: "../legacy-repo"
+# code_root:
+
+# 本專案要參照的內部套件規範。鍵為 .ark/standards/ 底下的組名，
+# 值為該組要用的文件清單（不含副檔名），整組都用可寫 all。
+#   standards:
+#     cub: [cub-cloud-db, cub-cloud-redis]
+#     cub: all
+# 未設定時，write-code 技能會在第一次實作前詢問並寫回這裡。
+standards: {}

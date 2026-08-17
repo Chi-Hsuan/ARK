@@ -34,6 +34,7 @@
 **轉接層**
 
 - Copilot：`.github/agents/*.agent.md`（5 個角色）、`.github/skills/`（每個技能一份薄殼）
+- Claude Code：`.claude/agents/ark-*.md`（5 個 subagent）、`.claude/skills/`、`CLAUDE.md`
 - Codex：`AGENTS.md`
 
 **文件結構**

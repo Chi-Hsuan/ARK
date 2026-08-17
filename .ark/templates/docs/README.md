@@ -24,18 +24,25 @@ ARK 由四個角色型 agent 組成，各自負責軟體開發流程的一段。
 ├── spec/                                    # 【現況】系統規格，回答「系統是怎麼做的」
 │   ├── README.md                            # 規格的命名規則與撰寫範圍
 │   ├── frontend/                            # 前端規格
-│   ├── services/                            # 後端系統規格
-│   └── schema/                              # 資料庫規格
+│   ├── services/                            # 後端系統規格，同組 API 代號一個資料夾
+│   │   └── {API代號前綴}_{功能名稱}/
+│   │       └── 系統規格書_{API代號}_{功能名稱}-{子功能名稱}.md
+│   └── schema/                              # 資料庫規格，一張表一份
 │
-└── library/                                 # 【現況】知識庫，回答「系統有什麼、在哪裡」
-    ├── system_overview.md                   # 系統概要：有哪些功能、主流程
-    ├── business/                            # 業務知識
-    └── index/                               # 各類索引
-        ├── README.md                        # 索引文件的使用方法
-        ├── functions/                       # 各 service 裡的 function，一個 service 一份
-        │   └── {service}_function_index.md  # 該 service 的 function 清單
-        ├── api_index.md                     # 本服務主要的後端 API
-        └── downstream_api_index.md          # 會呼叫到的下游服務
+├── library/                                 # 【現況】知識庫，回答「系統有什麼、在哪裡」
+│   ├── system_overview.md                   # 系統概要：有哪些功能、主流程
+│   ├── business/                            # 業務知識
+│   └── index/                               # 各類索引
+│       ├── INDEX_README.md                  # 索引的欄位定義、查詢流程與維護規則
+│       ├── functions/                       # 一支 Service 一份
+│       │   └── {API代號}.md              # 該 Service 呼叫的外部 function
+│       ├── api_index.md                     # 本服務主要的後端 API
+│       └── downstream_api_index.md          # 會呼叫到的下游服務
+│
+└── code/                                    # 【程式】實際程式碼，不進本 repo 的版控
+    ├── README.md                            # 版控規則與已取得的倉庫清單
+    ├── .gitignore                           # 只保留說明文件，其餘一律忽略
+    └── {系統名稱}/                            # 各自帶有 .git 的獨立倉庫
 ```
 
 ## 三個區塊
@@ -63,6 +70,17 @@ ARK 由四個角色型 agent 組成，各自負責軟體開發流程的一段。
 `library/` 是入口，`spec/` 是內容。找不到東西時從 `library/index/` 進去，找到之後到 `spec/` 讀細節。
 
 三者的接點是上線：`spec/` 在規格修訂當下就要跟上，`library/` 則在上線後回寫。任一步沒做，現況文件就開始失真。
+
+## code/ 不是文件區塊
+
+`code/` 放的是程式碼本身，不是文件。它跟前三塊放在一起只有一個理由：**讓 agent 讀規格與讀程式不必跨 workspace**。
+
+它與其他三塊有兩個關鍵差異：
+
+- **不進本 repo 的版控**——每個子資料夾是獨立的 git 倉庫，由 `code/.gitignore` 排除，只有 `code/README.md` 會被提交
+- **沒有 agent 負責維護**——ARK 的角色只讀它、不管理它的內容；程式的變更走各自倉庫的流程
+
+細節見 [code/README.md](code/README.md)。
 
 ## 角色與文件對應
 
@@ -106,4 +124,5 @@ ARK 由四個角色型 agent 組成，各自負責軟體開發流程的一段。
 - [requirements/Requirements 需求資料夾說明.md](requirements/Requirements%20需求資料夾說明.md) — 需求資料夾的結構與命名規則
 - [requirements/requirement_index.md](requirements/requirement_index.md) — 需求總管，含狀態與知識庫同步定義
 - [spec/README.md](spec/README.md) — 系統規格的命名規則與撰寫範圍
-- [library/index/README.md](library/index/README.md) — 索引文件的使用方法
+- [library/index/INDEX_README.md](library/index/INDEX_README.md) — 索引的欄位定義、查詢流程與維護規則
+- [code/README.md](code/README.md) — 程式碼資料夾的版控規則與已取得的倉庫清單

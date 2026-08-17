@@ -12,7 +12,7 @@ description: 檢視本次異動的程式碼品質、格式慣例與安全性，�
 1. 讀 `.ark/config.yml`，取得 `docs_root` 與 `standards`
 2. 選擇需求——依開立時間列出最近 10 筆，並附輸入欄位可輸入需求編號或名稱
 3. 讀該需求的異動影響評估書第二節與對應的 `{docs_root}/spec/` 規格
-4. 讀 `.ark/standards/` 底下該專案指定的 `STANDARD.md`
+4. 讀 `.ark/config.yml` 的 `standards`，載入對應的規範文件（`.ark/standards/{組}/`）。本次異動明顯不涉及的領域可略過，判斷方式見 `.ark/standards/README.md`
 
 ## 界定範圍
 
